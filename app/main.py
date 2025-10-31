@@ -38,33 +38,43 @@ def fetch_daily(ticker: str) -> pd.DataFrame:
     df = df.dropna(subset=["Close", "High", "Low"])
     return df
 
-def build_message(date_ny: dt.datetime, picks: list[dict], others: list[dict], top_n: int = 15) -> str:
-    """Format the Telegram message text."""
-    header = f"📊 *Daily Trend Signals* — {date_ny.strftime('%a, %b %d, %Y')} (09:00 New York)\n"
-    header += "_Universe: S&P 500 + Nasdaq-100_\n_Signals: SMA20/50, RSI(14), 52w proximity, volume spike_\n\n"
+def build_message(date_ny: dt.datetime, picks: list[dict], others: list[dict], top_n: int = 20) -> str:
+    """Builds an easy-to-read Telegram summary for beginners."""
+    header = f"📊 *Daily Stock Insights* — {date_ny.strftime('%a, %b %d, %Y')} (09:00 New York)\n\n"
 
-    lines = []
+    total_up = sum(1 for p in picks if p["trend"] == "Up")
+    total_down = sum(1 for p in picks if p["trend"] == "Down")
+    avg_rsi = round(sum(p["rsi"] for p in picks if p["rsi"]) / max(len(picks), 1), 1)
 
-    if picks:
-        lines.append("✅ *Top BUY Candidates*")
-        for p in picks[:top_n]:
-            lines.append(
-                f"• {p['ticker']}: score {p['score']:.2f} | Trend:{p['trend']} | RSI:{p['rsi']} | "
-                f"Δ:{p['pct_chg']:+.2f}% | 52w:{p['prox_52w']}% | Vol×:{p['vol_spike']}"
+    summary = (
+        f"*Today’s Market Snapshot:*\n"
+        f"• {total_up} stocks show strong upward trends.\n"
+        f"• {total_down} stocks are trending down or consolidating.\n"
+        f"• Average RSI of top movers: {avg_rsi} (neutral to bullish)\n\n"
+    )
+
+    body = "*Top 20 Trending Stocks Today:*\n"
+    if not picks:
+        body += "_No strong trend signals detected today._\n"
+    else:
+        for i, p in enumerate(picks[:top_n], start=1):
+            body += (
+                f"{i}. *{p['ticker']}* — {p['trend']} trend "
+                f"(RSI: {p['rsi']}, Δ: {p['pct_chg']:+.2f}%, "
+                f"52w: {p['prox_52w']}%, Vol×: {p['vol_spike']})\n"
             )
-        lines.append("")
 
-    sells = [o for o in others if o.get("sell_cross")]
-    if sells:
-        lines.append("⚠️ *SELL Crossovers (heads-up)*")
-        for s in sells[:10]:
-            lines.append(
-                f"• {s['ticker']}: Trend:{s['trend']} | RSI:{s['rsi']} | Δ:{s['pct_chg']:+.2f}%"
-            )
-        lines.append("")
+    explain = (
+        "\n📈 *Indicators Explained:*\n"
+        "• *SMA20/50*: Short-term (20-day) vs long-term (50-day) price averages.\n"
+        "• *RSI(14)*: Momentum indicator (below 40 = oversold, above 70 = overbought).\n"
+        "• *52w High*: How close price is to its yearly peak (in %).\n"
+        "• *Vol×*: Current volume compared to 30-day average.\n"
+    )
 
-    footer = "\n—\n_Educational only. Tune rules in repo to fit your strategy._"
-    return header + "\n".join(lines) + footer
+    footer = "\n—\n_This is a bot designed and programmed by Hamza Syed and its for Educational only. Use for learning trend analysis, not direct financial advice._"
+
+    return header + summary + body + explain + footer
 
 def main():
     """Main daily pipeline."""
