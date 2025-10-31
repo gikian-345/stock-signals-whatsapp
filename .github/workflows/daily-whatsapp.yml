@@ -2,34 +2,33 @@ name: daily-whatsapp
 
 on:
   schedule:
-    - cron: "0 * * * *"   # hourly (UTC)
-  workflow_dispatch:
+    - cron: "0 * * * *"   # runs hourly (UTC)
+  workflow_dispatch:       # allow manual runs
 
 jobs:
   run:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install deps
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run app
+      - name: Run app (send Telegram message)
         env:
-          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
-          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
-          TWILIO_WHATSAPP_TO: ${{ secrets.TWILIO_WHATSAPP_TO }}
-          TWILIO_WHATSAPP_FROM: ${{ secrets.TWILIO_WHATSAPP_FROM }}
-          OVERRIDE_SEND: ${{ vars.OVERRIDE_SEND }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          OVERRIDE_SEND: ${{ vars.OVERRIDE_SEND }}  # set to 'true' as a repo variable to force a test
         run: |
           python -m app.main
