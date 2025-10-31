@@ -3,9 +3,15 @@ import os, pytz, datetime as dt
 import pandas as pd
 import yfinance as yf
 import pandas_market_calendars as mcal
-from indicators import add_indicators, summarize
-from messenger_telegram import send_telegram
-from universe_builder import get_universe
+
+# ✅ Use fully qualified imports
+from app.indicators import add_indicators, summarize
+from app.messenger_telegram import send_telegram
+from app.universe_builder import get_universe
+
+
+
+
 
 # --- Configuration ---
 NY_TZ = pytz.timezone("America/New_York")
