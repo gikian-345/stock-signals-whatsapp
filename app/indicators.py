@@ -34,3 +34,45 @@ def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     out["vol_spike"] = out["Volume"] / out["vol30"]
 
     return out
+
+def _crossover(prev: pd.Series, last: pd.Series) -> tuple[bool, bool]:
+    up = (last["SMA20"] > last["SMA50"]) and (prev["SMA20"] <= prev["SMA50"])
+    down = (last["SMA20"] < last["SMA50"]) and (prev["SMA20"] >= prev["SMA50"])
+    return up, down
+
+def _score(prev: pd.Series, last: pd.Series) -> float:
+    score = 0.0
+    # Trend bias
+    if last["SMA20"] > last["SMA50"]:
+        score += 1.0
+    # Fresh bullish crossover
+    up, _ = _crossover(prev, last)
+    if up:
+        score += 2.0
+    # RSI sweet spot
+    rsi = last["RSI14"]
+    if pd.notna(rsi) and 45 <= rsi <= 60:
+        score += 1.0
+    # Near 52-week high
+    if pd.notna(last["prox_52w"]) and last["prox_52w"] >= 90:
+        score += 1.0
+    # Volume confirmation
+    if pd.notna(last["vol_spike"]) and last["vol_spike"] >= 1.2:
+        score += 1.0
+    return float(score)
+
+def summarize(prev: pd.Series, last: pd.Series) -> dict:
+    up, down = _crossover(prev, last)
+    trend = "Up" if last["SMA20"] > last["SMA50"] else "Down"
+    pct_chg = (last["Close"] / prev["Close"] - 1) * 100
+
+    return {
+        "trend": trend,
+        "buy_cross": up,
+        "sell_cross": down,
+        "rsi": None if pd.isna(last["RSI14"]) else round(float(last["RSI14"]), 1),
+        "prox_52w": None if pd.isna(last["prox_52w"]) else round(float(last["prox_52w"]), 1),
+        "vol_spike": None if pd.isna(last["vol_spike"]) else round(float(last["vol_spike"]), 2),
+        "pct_chg": round(float(pct_chg), 2),
+        "score": round(_score(prev, last), 2),
+    }
