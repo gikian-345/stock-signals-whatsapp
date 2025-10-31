@@ -2,8 +2,8 @@ name: daily-whatsapp
 
 on:
   schedule:
-    - cron: "0 * * * *"   # runs hourly (UTC)
-  workflow_dispatch:       # allow manual runs
+    - cron: "0 * * * *"        # Run hourly (UTC) so it catches 09:00 New York
+  workflow_dispatch:           # Allow manual trigger
 
 jobs:
   run:
@@ -25,10 +25,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Preflight diagnostics
+        run: |
+          python - <<'PY'
+          import os, datetime, pytz
+          ny = datetime.datetime.now(pytz.timezone("America/New_York"))
+          print("🕒 Current New York time:", ny.strftime("%Y-%m-%d %H:%M:%S %Z%z"))
+          required = ["TELEGRAM_BOT_TOKEN","TELEGRAM_CHAT_ID"]
+          missing = [k for k in required if not os.getenv(k)]
+          if missing:
+              raise SystemExit(f"❌ Missing secrets: {missing}. Go to Settings → Secrets → Actions.")
+          print("✅ All Telegram secrets present.")
+          PY
+
       - name: Run app (send Telegram message)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          OVERRIDE_SEND: ${{ vars.OVERRIDE_SEND }}  # set to 'true' as a repo variable to force a test
+          OVERRIDE_SEND: ${{ vars.OVERRIDE_SEND }}   # set to 'true' to force a manual test
         run: |
           python -m app.main
