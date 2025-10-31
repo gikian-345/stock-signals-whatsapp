@@ -7,23 +7,19 @@ from indicators import add_indicators, summarize
 from messenger_telegram import send_telegram
 from universe_builder import get_universe
 
-
 # --- Configuration ---
 NY_TZ = pytz.timezone("America/New_York")
-
 
 def is_ny_9am_now() -> bool:
     """Check if current New York time is 09:00."""
     now_ny = dt.datetime.now(NY_TZ)
     return now_ny.hour == 9 and now_ny.minute == 0
 
-
 def is_market_day(date_ny: dt.date) -> bool:
     """Check if NYSE is open on this date."""
     nyse = mcal.get_calendar("NYSE")
     sched = nyse.schedule(start_date=date_ny, end_date=date_ny)
     return not sched.empty
-
 
 def fetch_daily(ticker: str) -> pd.DataFrame:
     """Download 14 months of daily data from Yahoo Finance."""
@@ -35,7 +31,6 @@ def fetch_daily(ticker: str) -> pd.DataFrame:
             raise RuntimeError("missing columns")
     df = df.dropna(subset=["Close", "High", "Low"])
     return df
-
 
 def build_message(date_ny: dt.datetime, picks: list[dict], others: list[dict], top_n: int = 15) -> str:
     """Format the Telegram message text."""
@@ -64,7 +59,6 @@ def build_message(date_ny: dt.datetime, picks: list[dict], others: list[dict], t
 
     footer = "\n—\n_Educational only. Tune rules in repo to fit your strategy._"
     return header + "\n".join(lines) + footer
-
 
 def main():
     """Main daily pipeline."""
@@ -108,7 +102,6 @@ def main():
     # --- Send to Telegram ---
     send_telegram(body)
     print("Telegram message sent successfully.")
-
 
 if __name__ == "__main__":
     main()
